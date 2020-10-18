@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecurityAudit</title>
+    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.2/css/bootstrap.min.css' />
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css" />
+</head>
+
+<body style="padding: 7%;">
+    <h1 class="display-3">SecurityAudit</h1>
+    <hr class="w-100" />
+    <div class="row">
+        <div id="searchTable" style="width:100vw;margin-bottom:1%;" width="100%"></div>
+        <hr class="w-100" />
+        <table id="dataTable" class="display" style="width:100vw;margin-top:1%;" width="100%"></table>
+    </div>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.0/jquery.min.js'>
+        // jquery.js
+    </script>
+    <script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js">
+        // DataTables.js
+    </script>
+    <script>
+        // 全域
+        var GoogleSheetData;
+        // 裡面就是區域無法藉由 console 直接讀取
+        $(function() {
+            // Get 取整包資料
+            $.get('https://spreadsheets.google.com/feeds/list/1u6CNgegIsg6EMMb6EoHzMLu9IAIQYoghqPbqY96xpq0/1/public/values?alt=json', function(response) {
+                // Google Sheet API 給的資料結構看 f12 的 console
+                console.log('※※※ response ※※※', response);
+                GoogleSheetData = response; // console 查詢用
+                // 整理出 DataTable.js 函式庫所需要的資料，詳細看官網或網路資料，這邊我直接用之前寫的套用
+
+                // ★★★★★ 首先整理出 DataTable 所需的頁首 ★★★★★
+
+                // var 裝頁首的容器
+                var HeadArray = [];
+                // console.log("※※※ HeadArray ※※※", HeadArray)
+                var HeadObject = {
+                    title: "",
+                    sTitle: ""
+                };
+                // console.log("※※※ HeadData ※※※", HeadObject)
+                HeadArray.push(HeadObject);
+                // console.log("※※※ HeadArray.push(HeadObject) ※※※", HeadArray)
+
+                // ★★★★★ 整理出方便整理資料的物件 ★★★★★
+                var HeadArrayForSetData = [];
+
+                // ★★★★★ 用一筆資料 整理頁首就夠了 ★★★★★
+                // console.log('※※※ Object.keys(data.feed.entry) ※※※', Object.keys(data.feed.entry));
+                Object.keys(response.feed.entry[0]).forEach(
+                    function(key) {
+                        var value = response.feed.entry[0][key];
+                        // console.log('※※※ value ※※※', value);
+                        // console.log('※※※ key ※※※', key);
+                        // console.log('key.includes("gsx$");', key.includes('gsx$'));
+
+                        // ★★★★★ 若 key 比對到 gsx$ 時，將 header push 一筆 ★★★★★
+
+                        if (key.includes('gsx$')) {
+                            // console.log('※※※ key ※※※', key)
+                            key = key.replace('gsx$', '')
+                                // console.log('※※※ key.replace("gsx$","") ※※※', key)
+                            HeadObject = {
+                                title: key,
+                                sTitle: key
+                            };
+                            // console.log('※※※ HeadObject ※※※', HeadObject)
+                            HeadArray.push(HeadObject);
+                            HeadArrayForSetData.push('gsx$' + key);
+                            // console.log("※※※ HeadArray.push(HeadObject) ※※※", HeadArray)
+                        }
+                    }
+                );
+
+                // ★★★★★ 整理完成後的 DataTable.js 所需 header 資料 ★★★★★
+                console.log("※※※ HeadObject ※※※", HeadArray);
+                // ★★★★★ 整理成純 header 資料，方便整理資料 ★★★★★
+                console.log("※※※ HeadArrayForSetData ※※※", HeadArrayForSetData);
+
+
+                // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+
+
+                // ★★★★★ 接著整理出 顯示所需要的 DataTable.js 資料 ★★★★★
+
+                // var 裝資料的容器
+                var DateArray = [];
+
+                response.feed.entry.forEach(SetData);
+
+                function SetData(SetDataItem, SetDataIndex, SetDataArr) {
+                    // console.log('※※※ SetDataItem ※※※', SetDataItem);
+                    // console.log('※※※ SetDataIndex ※※※', SetDataIndex);
+                    // console.log('※※※ SetDataArr ※※※', SetDataArr);
+
+                    // 每走一次迴圈刷新一次這個物件在 push 進 DateArray
+                    var ObjectArray = [];
+                    ObjectArray.push(null);
+                    // console.log("※※※ ObjectArray ※※※", ObjectArray);
+
+                    // X 乘 X 次數的 filter 不管誰在外面都要做固定次數
+                    HeadArrayForSetData.forEach(FilterData);
+
+                    function FilterData(FilterDataItem, FilterDataIndex, FilterDataArr) {
+                        // console.log('※※※ FilterDataItem ※※※', FilterDataItem);
+                        // console.log('※※※ FilterDataIndex ※※※', FilterDataIndex);
+                        // console.log('※※※ FilterDataArr ※※※', FilterDataArr);
+                        // console.log("'gsx$' + FilterDataItem", 'gsx$' + FilterDataItem);
+                        // console.log("data.feed.entry", data.feed.entry);
+
+                        // ★★★★★ 利用物件 Key 名稱 取出值 SetDataItem[KeyName]].$t ★★★★★
+                        // console.log('※※※ item : SetDataItem[KeyName].$t ※※※', FilterDataItem + " : " + SetDataItem[FilterDataItem].$t);
+                        // ★★★★★ 這裡資料比較多比較雜利用字串組成 JSON 字串後 再由字串轉 object 再存進陣列 ★★★★★
+                        // ★★★★★ 但後來發現 DataTable.js 所需要的資料檔案不是物件是陣列，所以比較簡單一些直接放進陣列，再放進 DateArray 變數即可 ★★★★★
+
+                        var GetData = SetDataItem[FilterDataItem].$t;
+                        // console.log('※※※ GetData ※※※', GetData);
+                        ObjectArray.push(GetData);
+                        // console.log("※※※ ObjectArray ※※※", ObjectArray);
+                    }
+
+                    DateArray.push(ObjectArray);
+
+                }
+
+                // ★★★★★ 整理完成後的 DataTable.js 所需 Data 資料 ★★★★★
+                console.log("※※※ DateArray ※※※", DateArray);
+
+
+                // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+
+
+                // ★★★★★ 接著引入 DataTable.js 函式庫，做渲染刷新，即完成 ★★★★★
+                // ★★★★★ 這邊我們就回到之前的專案直接 copy 自己寫的東西... ★★★★★
+
+                var stheader = [];
+                HeadArrayForSetData.forEach(FilterHeader);
+
+                function FilterHeader(params) {
+                    // console.log(params);
+                    params = params.replace('gsx$', '');
+                    // console.log('params', params);
+                    stheader.push(params);
+                }
+
+                console.log('stheader', stheader);
+
+                //生成 SearchTable
+                console.log('★★★ SearchTable Set ★★★');
+
+                let st_html = "<ul style='display:flex;flex-wrap:wrap;justify-content:flex-start;'>";
+
+                for (let i = 0; i < stheader.length; i++) {
+
+                    st_html += '<li style="width: 25%;" data-column="' + (i + 1) + '"><label for="stheader_' + (i + 1) + '">' + stheader[i];
+                    st_html += '</label> (智慧搜尋 <input type="checkbox" class="column_filter" id="stheader_smart_' + (i + 1);
+                    st_html += '" checked="checked">)<input class="column_filter" type="text" id="stheader_' + (i + 1);
+                    st_html += '" style="margin-left:3%;"/></li >';
+
+                    // console.log('st_html_Set', st_html);
+
+                };
+
+                st_html += "</ul>";
+
+                // console.log('st_html_End', st_html);
+
+                console.log("$('#searchTable')", $('#searchTable'));
+
+                $('#searchTable').html(st_html);
+
+                console.log('★★★ SearchTable Set ★★★');
+
+                //生成 DataTable
+                console.log('★★★ DataTable Set ★★★');
+                var dt = $('#dataTable').DataTable({
+                    columns: HeadArray,
+                    columnDefs: [{
+
+                        targets: 0,
+                        searchable: false,
+                        orderable: false,
+
+                    }],
+                    data: DateArray,
+                    destroy: true //Cannot reinitialise DataTable,解决重新加载表格内容问题
+                });
+                dt.on('order.dt search.dt', function() {
+                    dt.column(0, {
+                        search: 'applied',
+                        order: 'applied'
+                    }).nodes().each(
+                        function(cell, i) {
+                            cell.innerHTML = i + 1;
+                        }
+                    );
+                }).draw();
+
+                console.log('★★★ DataTable End ★★★');
+
+                console.log('★★★ function Start ★★★');
+
+                console.log('$("input.column_filter")', $('input.column_filter'))
+
+                $('input.column_filter').on('keyup click', function() {
+                    console.log('★★★ keyup click ★★★');
+                    // console.log('$(this).parents("li").attr("data - column")', $(this).parents('li').attr('data-column'));
+                    filterColumn($(this).parents('li').attr('data-column'));
+                });
+
+                function filterColumn(i) {
+                    // console.log('i', i);
+                    // console.log('$("#stheader_" + i).val()', $('#stheader_' + i).val());
+                    // console.log('$("#dataTable").DataTable().column(i+1)', $('#dataTable').DataTable().column(i + 1));
+                    console.log('$("#stheader_smart_i").prop("checked")', $('#stheader_smart_' + i).prop('checked'));
+                    $('#dataTable').DataTable().column(i).search(
+                        $('#stheader_' + i).val(),
+                        false,
+                        $('#stheader_smart_' + i).prop('checked')
+                    ).draw();
+                }
+
+                console.log('★★★ function End ★★★');
+
+                console.log('★★★ async function End ★★★');
+            });
+
+
+        });
+    </script>
+</body>
+
+</html>
