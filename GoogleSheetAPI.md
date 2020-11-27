@@ -18,4 +18,6 @@ doGet(e) 、 doPost(e)
 
 ## GetData
 
-請參考 README.md
+<https://www.oxxostudio.tw/articles/201706/google-spreadsheet-4-write-data.html>
+
+也可參考 README.md
