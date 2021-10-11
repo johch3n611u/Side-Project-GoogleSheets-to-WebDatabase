@@ -1,3 +1,11 @@
+## 引言
+
+繼上次實作 Electron.net 單機版本的 SheetFilter 後，
+
+釐清需求其實比較需要的是 Web System 的 SheetFilter，以此專案實作。
+
+採用 GoogleSheets API 當作資料來源，20201119更新 GA 實作。
+
 # Side-Project-GoogleSheets-to-WebDatabase
 
 ![alt](/final.png)
